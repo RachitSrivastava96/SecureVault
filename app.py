@@ -3,7 +3,13 @@ import uuid
 import magic
 import logging
 import json
-from flask import Flask, render_template, request, redirect, flash, send_from_directory, abort
+from datetime import datetime
+from cryptography.fernet import Fernet
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, flash, Response, abort
+
+# ── Load environment variables from .env ──
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -19,6 +25,13 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 app.config["UPLOAD_FOLDER"]      = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_SIZE
+
+# ── Load encryption key from .env ──
+# This key never appears in code — it lives only in .env
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+if not ENCRYPTION_KEY:
+    raise RuntimeError("ENCRYPTION_KEY not found in .env — run setup instructions first!")
+fernet = Fernet(ENCRYPTION_KEY.encode())
 
 # ── Create uploads folder if it doesn't exist ──
 if not os.path.exists(UPLOAD_FOLDER):
@@ -37,7 +50,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-# ── Registry helpers ──
+# ────────────────────────────────────────────
+#  Registry helpers
+# ────────────────────────────────────────────
 def load_registry():
     with open(REGISTRY_FILE, "r") as f:
         return json.load(f)
@@ -46,7 +61,9 @@ def save_registry(registry):
     with open(REGISTRY_FILE, "w") as f:
         json.dump(registry, f, indent=2)
 
-# ── Validation helpers ──
+# ────────────────────────────────────────────
+#  Validation helpers
+# ────────────────────────────────────────────
 def get_ip():
     return request.headers.get("X-Forwarded-For", request.remote_addr)
 
@@ -62,6 +79,22 @@ def allowed_mime(file):
     mime = magic.from_buffer(file.read(2048), mime=True)
     file.seek(0)
     return mime in ALLOWED_MIME_TYPES
+
+# ────────────────────────────────────────────
+#  Encryption helpers
+# ────────────────────────────────────────────
+def encrypt_and_save(file, save_path):
+    """Read file bytes, encrypt them, write to disk."""
+    raw_bytes      = file.read()
+    encrypted_bytes = fernet.encrypt(raw_bytes)
+    with open(save_path, "wb") as f:
+        f.write(encrypted_bytes)
+
+def decrypt_to_bytes(save_path):
+    """Read encrypted file from disk, decrypt to raw bytes in memory."""
+    with open(save_path, "rb") as f:
+        encrypted_bytes = f.read()
+    return fernet.decrypt(encrypted_bytes)
 
 
 # ────────────────────────────────────────────
@@ -99,20 +132,26 @@ def home():
             flash("File content doesn't match its extension!", "error")
             return redirect("/")
 
-        # ── All checks passed ──
+        # ── All checks passed — encrypt and save ──
         original_name = file.filename
         ext           = original_name.rsplit(".", 1)[1].lower()
         new_filename  = str(uuid.uuid4()) + "." + ext
         save_path     = os.path.join(app.config["UPLOAD_FOLDER"], new_filename)
-        file.save(save_path)
 
+        encrypt_and_save(file, save_path)   # ← encrypted write, not plain file.save()
+
+        # ── Record in registry with timestamp ──
+        uploaded_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         registry = load_registry()
-        registry[new_filename] = original_name
+        registry[new_filename] = {
+            "original_name": original_name,
+            "uploaded_at":   uploaded_at,
+        }
         save_registry(registry)
 
         file_size = os.path.getsize(save_path)
         logging.info(
-            f"IP={ip} | SUCCESS | "
+            f"IP={ip} | SUCCESS | ENCRYPTED | "
             f"original='{original_name}' | "
             f"saved_as='{new_filename}' | "
             f"size={file_size} bytes"
@@ -132,21 +171,25 @@ def file_list():
     registry = load_registry()
 
     files = []
-    for uuid_name, original_name in registry.items():
+    for uuid_name, meta in registry.items():
         path = os.path.join(UPLOAD_FOLDER, uuid_name)
         if os.path.exists(path):
             size_kb = round(os.path.getsize(path) / 1024, 1)
             files.append({
                 "uuid_name":     uuid_name,
-                "original_name": original_name,
+                "original_name": meta["original_name"],
+                "uploaded_at":   meta["uploaded_at"],
                 "size_kb":       size_kb,
             })
+
+    # Newest first
+    files.sort(key=lambda x: x["uploaded_at"], reverse=True)
 
     return render_template("files.html", files=files)
 
 
 # ────────────────────────────────────────────
-#  ROUTE 3: Secure download
+#  ROUTE 3: Secure download (decrypts on the fly)
 # ────────────────────────────────────────────
 @app.route("/download/<uuid_name>")
 def download_file(uuid_name):
@@ -155,15 +198,66 @@ def download_file(uuid_name):
     if uuid_name not in registry:
         abort(404)
 
-    original_name = registry[uuid_name]
+    meta          = registry[uuid_name]
+    original_name = meta["original_name"]
+    save_path     = os.path.join(UPLOAD_FOLDER, uuid_name)
 
-    return send_from_directory(
-        app.config["UPLOAD_FOLDER"],
-        uuid_name,
-        as_attachment=True,
-        download_name=original_name
+    # Decrypt in memory — never write decrypted bytes to disk
+    decrypted_bytes = decrypt_to_bytes(save_path)
+
+    ext_to_mime = {
+        "pdf":  "application/pdf",
+        "png":  "image/png",
+        "jpg":  "image/jpeg",
+        "jpeg": "image/jpeg",
+    }
+    ext      = original_name.rsplit(".", 1)[1].lower()
+    mimetype = ext_to_mime.get(ext, "application/octet-stream")
+
+    return Response(
+        decrypted_bytes,
+        mimetype=mimetype,
+        headers={
+            "Content-Disposition": f'attachment; filename="{original_name}"'
+        }
     )
 
 
+# ────────────────────────────────────────────
+#  ROUTE 4: Delete file
+# ────────────────────────────────────────────
+@app.route("/delete/<uuid_name>", methods=["POST"])
+def delete_file(uuid_name):
+    ip       = get_ip()
+    registry = load_registry()
+
+    if uuid_name not in registry:
+        abort(404)
+
+    meta          = registry[uuid_name]
+    original_name = meta["original_name"]
+    file_path     = os.path.join(UPLOAD_FOLDER, uuid_name)
+
+    # Remove from disk
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # Remove from registry
+    del registry[uuid_name]
+    save_registry(registry)
+
+    logging.info(f"IP={ip} | DELETED | original='{original_name}' | uuid='{uuid_name}'")
+    flash(f"'{original_name}' deleted.", "success")
+    return redirect("/files")
+
+
+# ────────────────────────────────────────────
+#  Run
+#  For HTTPS locally: set ssl_context to a cert/key pair
+#  For HTTP locally: set ssl_context to None or remove it
+# ────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(
+        debug=True,
+        # ssl_context=("cert.pem", "key.pem")
+    )

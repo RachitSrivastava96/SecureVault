@@ -1,0 +1,4 @@
+flask
+python-magic-bin
+cryptography
+python-dotenv

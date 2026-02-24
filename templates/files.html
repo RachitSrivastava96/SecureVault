@@ -13,7 +13,7 @@
             --border:  #1e2535;
             --accent:  #4f8ef7;
             --accent2: #7c3aed;
-            --success: #10b981;
+            --danger:  #ef4444;
             --text:    #e2e8f0;
             --muted:   #64748b;
         }
@@ -47,13 +47,13 @@
         .page {
             position: relative;
             z-index: 1;
-            max-width: 780px;
+            max-width: 820px;
             margin: 0 auto;
         }
 
         .top-bar {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             margin-bottom: 36px;
             flex-wrap: wrap;
@@ -61,9 +61,6 @@
         }
 
         .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
             font-family: 'Space Mono', monospace;
             font-size: 11px;
             color: var(--accent);
@@ -72,8 +69,8 @@
             padding: 4px 10px;
             border-radius: 99px;
             letter-spacing: 0.05em;
+            display: inline-block;
             margin-bottom: 8px;
-            display: block;
         }
 
         h1 {
@@ -96,16 +93,52 @@
             border-radius: 10px;
             text-decoration: none;
             transition: opacity 0.2s, transform 0.15s;
+            white-space: nowrap;
         }
 
         .upload-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        /* ── File count ── */
         .count {
             font-family: 'Space Mono', monospace;
             font-size: 12px;
             color: var(--muted);
             margin-bottom: 20px;
+        }
+
+        /* ── Flash messages ── */
+        .flashes {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .flash {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 600;
+            animation: flashIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+        }
+
+        @keyframes flashIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .flash.success {
+            background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.3);
+            color: #34d399;
+        }
+
+        .flash.error {
+            background: rgba(239,68,68,0.12);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #f87171;
         }
 
         /* ── Empty state ── */
@@ -140,7 +173,7 @@
             transition: border-color 0.2s;
         }
 
-        .file-card:hover { border-color: rgba(79,142,247,0.4); }
+        .file-card:hover { border-color: rgba(79,142,247,0.3); }
 
         @keyframes cardIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -148,7 +181,7 @@
         }
 
         .file-icon {
-            font-size: 28px;
+            font-size: 22px;
             flex-shrink: 0;
             width: 44px;
             height: 44px;
@@ -177,6 +210,13 @@
             color: var(--muted);
         }
 
+        /* ── Actions ── */
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
         .download-btn {
             display: inline-flex;
             align-items: center;
@@ -187,10 +227,9 @@
             font-family: 'Syne', sans-serif;
             font-size: 13px;
             font-weight: 600;
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 8px;
             text-decoration: none;
-            flex-shrink: 0;
             transition: background 0.2s, transform 0.15s;
         }
 
@@ -199,8 +238,42 @@
             transform: translateY(-1px);
         }
 
-        /* ── Top accent ── */
-        .file-card::before { display: none; }
+        /* Delete is a form/button so it looks identical to download btn */
+        .delete-form { margin: 0; }
+
+        .delete-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: #f87171;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239,68,68,0.15);
+            transform: translateY(-1px);
+        }
+
+        /* Encrypted badge on each card */
+        .enc-badge {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: #a78bfa;
+            background: rgba(124,58,237,0.1);
+            border: 1px solid rgba(124,58,237,0.2);
+            padding: 2px 7px;
+            border-radius: 99px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -214,25 +287,54 @@
         <a href="/" class="upload-btn">＋ Upload New File</a>
     </div>
 
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">
+              <span>{% if category == 'success' %}✅{% else %}⚠️{% endif %}</span>
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
     {% if files %}
-        <p class="count">{{ files|length }} file{% if files|length != 1 %}s{% endif %} stored</p>
+        <p class="count">{{ files|length }} file{% if files|length != 1 %}s{% endif %} stored · all encrypted at rest</p>
 
         <div class="file-list">
         {% for file in files %}
             {% set ext = file.original_name.rsplit('.', 1)[-1].lower() %}
             <div class="file-card">
+
                 <div class="file-icon">
                     {% if ext == 'pdf' %}📄
                     {% elif ext in ['jpg', 'jpeg', 'png'] %}🖼️
                     {% else %}📁{% endif %}
                 </div>
+
                 <div class="file-info">
-                    <div class="file-name">{{ file.original_name }}</div>
-                    <div class="file-meta">{{ file.size_kb }} KB &nbsp;·&nbsp; {{ ext.upper() }}</div>
+                    <div class="file-name">
+                        {{ file.original_name }}
+                        <span class="enc-badge">🔒 encrypted</span>
+                    </div>
+                    <div class="file-meta">
+                        {{ file.size_kb }} KB &nbsp;·&nbsp; {{ ext.upper() }} &nbsp;·&nbsp; {{ file.uploaded_at }}
+                    </div>
                 </div>
-                <a href="/download/{{ file.uuid_name }}" class="download-btn">
-                    ↓ Download
-                </a>
+
+                <div class="actions">
+                    <a href="/download/{{ file.uuid_name }}" class="download-btn">↓ Download</a>
+
+                    <!-- Delete uses POST so it can't be triggered by just visiting a URL -->
+                    <form class="delete-form" method="POST" action="/delete/{{ file.uuid_name }}"
+                          onsubmit="return confirm('Delete {{ file.original_name }}? This cannot be undone.')">
+                        <button type="submit" class="delete-btn">✕ Delete</button>
+                    </form>
+                </div>
+
             </div>
         {% endfor %}
         </div>
