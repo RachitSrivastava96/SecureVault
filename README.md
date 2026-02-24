@@ -39,14 +39,30 @@ project/
 
 ## Setup
 
-**1. Install dependencies**
+**1. Create and activate a virtual environment**
+
+Windows:
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+Mac/Linux:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+You should see `(.venv)` in your terminal prompt once activated.
+
+**2. Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
 > On Mac/Linux replace `python-magic-bin` with `python-magic` in `requirements.txt`
 
-**2. Generate an encryption key**
+**3. Generate an encryption key**
 
 Run this once in Python:
 ```python
@@ -54,12 +70,12 @@ from cryptography.fernet import Fernet
 print(Fernet.generate_key().decode())
 ```
 
-**3. Create a `.env` file in the project root and paste the key in:**
+**4. Create a `.env` file in the project root and paste the key in:**
 ```
 ENCRYPTION_KEY=your-generated-key-here
 ```
 
-**4. Run the app**
+**5. Run the app**
 ```bash
 python app.py
 ```
