@@ -1,67 +1,594 @@
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400;500&display=swap');
+
+/* ── Tokens ── */
+:root {
+    --bg:          #0e0e0f;
+    --bg2:         #131315;
+    --surface:     #17171a;
+    --surface2:    #1c1c20;
+    --border:      #27272c;
+    --border-soft: #1f1f23;
+    --gold:        #c9a96e;
+    --gold-dim:    #8a6f44;
+    --gold-glow:   rgba(201,169,110,0.08);
+    --text:        #e8e4dc;
+    --text-mid:    #9e9a93;
+    --text-dim:    #55534f;
+    --success:     #4e9e7a;
+    --success-bg:  rgba(78,158,122,0.08);
+    --success-bdr: rgba(78,158,122,0.22);
+    --error:       #a05252;
+    --error-bg:    rgba(160,82,82,0.08);
+    --error-bdr:   rgba(160,82,82,0.22);
+    --radius:      4px;
+    --radius-lg:   8px;
+    --radius-xl:   12px;
+}
+
+/* ── Base ── */
+html { font-size: 16px; }
+
 body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #1f2937, #111827);
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Subtle grain overlay ── */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 128px;
+}
+
+/* ════════════════════════════════
+   UPLOAD PAGE
+   ════════════════════════════════ */
+
+.upload-wrap {
+    min-height: 100vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    height: 100vh;
-    margin: 0;
-    color: white;
+    justify-content: center;
+    padding: 48px 24px;
 }
 
-.container {
-    background: #1e293b;
-    padding: 40px;
-    border-radius: 12px;
-    width: 400px;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+.wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 56px;
+    opacity: 0;
+    animation: fadeDown 0.8s 0.1s cubic-bezier(0.16,1,0.3,1) forwards;
 }
 
-h2 {
-    margin-bottom: 10px;
-}
-
-p {
-    font-size: 14px;
-    color: #9ca3af;
-}
-
-input[type="file"] {
-    margin: 20px 0;
-    padding: 8px;
-    background: #374151;
-    color: white;
-    border-radius: 6px;
-    border: none;
+.card {
     width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 52px 48px;
+    position: relative;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.25s cubic-bezier(0.16,1,0.3,1) forwards;
+    box-shadow:
+        0 1px 0 0 rgba(255,255,255,0.03) inset,
+        0 48px 96px rgba(0,0,0,0.55);
 }
 
-button {
-    background: #3b82f6;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    width: 100%;
-    font-weight: bold;
+/* thin gold top rule */
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 48px; right: 48px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
 }
 
-button:hover {
-    background: #2563eb;
+.card-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 20px;
 }
+
+.card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 38px;
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+}
+
+.card-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    margin-bottom: 40px;
+    line-height: 1.7;
+}
+
+/* ── Flash messages ── */
+.flashes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 28px;
+}
+
 .flash {
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 6px;
-    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: var(--radius);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    animation: flashSlide 0.45s cubic-bezier(0.16,1,0.3,1) both;
 }
 
 .flash.success {
-    background-color: #16a34a;
+    background: var(--success-bg);
+    border: 1px solid var(--success-bdr);
+    color: #7ec4a4;
 }
 
 .flash.error {
-    background-color: #dc2626;
+    background: var(--error-bg);
+    border: 1px solid var(--error-bdr);
+    color: #c48a8a;
+}
+
+/* ── Dropzone ── */
+.dropzone {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.3s ease, background 0.3s ease;
+    margin-bottom: 20px;
+    background: var(--bg2);
+    overflow: hidden;
+}
+
+.dropzone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, var(--gold-glow), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.dropzone:hover,
+.dropzone.dragover {
+    border-color: var(--gold-dim);
+    background: var(--surface2);
+}
+
+.dropzone:hover::before,
+.dropzone.dragover::before {
+    opacity: 1;
+}
+
+.dz-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    transition: border-color 0.3s, transform 0.3s;
+}
+
+.dropzone:hover .dz-icon { border-color: var(--gold-dim); transform: translateY(-2px); }
+
+.dz-icon svg { width: 18px; height: 18px; stroke: var(--gold-dim); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+.dz-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.dz-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+}
+
+.dz-chosen {
+    margin-top: 12px;
+    font-size: 10.5px;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    min-height: 14px;
+    transition: opacity 0.2s;
+}
+
+#file-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+/* ── Type tags ── */
+.types {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+
+.type-tag {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--border-soft);
+    color: var(--text-dim);
+    background: var(--bg2);
+}
+
+/* ── Primary button ── */
+.btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    border-radius: var(--radius);
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s, border-color 0.3s;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gold-glow);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+
+.btn-primary:hover { color: #e8c87a; border-color: var(--gold); }
+.btn-primary:hover::before { transform: scaleX(1); }
+.btn-primary:active { transform: scale(0.995); }
+
+.btn-primary span { position: relative; z-index: 1; }
+
+/* ── Footer note ── */
+.card-footer {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 9.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+}
+
+.lock-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+    opacity: 0.6;
+}
+
+/* ════════════════════════════════
+   FILES PAGE
+   ════════════════════════════════ */
+
+.files-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 56px 32px;
+}
+
+/* ── Top nav ── */
+.files-nav {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border-soft);
+    gap: 20px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeDown 0.7s 0.1s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.files-wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 10px;
+}
+
+.files-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: -0.01em;
+}
+
+.btn-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-mid);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.25s, border-color 0.25s, background 0.25s;
+    white-space: nowrap;
+    background: var(--surface);
+}
+
+.btn-nav:hover {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+}
+
+/* ── Count line ── */
+.files-count {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+/* ── File list ── */
+.file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.file-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    background: var(--surface);
+    transition: background 0.2s;
+    opacity: 0;
+    animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.file-row:hover { background: var(--surface2); }
+
+.file-row:first-child { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.file-row:last-child  { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.file-row:only-child  { border-radius: var(--radius-lg); }
+
+/* ── File type icon ── */
+.file-type {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    flex-shrink: 0;
+}
+
+.file-type svg { width: 16px; height: 16px; stroke: var(--gold-dim); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── File info ── */
+.file-info { flex: 1; min-width: 0; }
+
+.file-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+}
+
+.file-meta {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.meta-sep { color: var(--border); }
+
+.enc-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--gold-dim);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+}
+
+.enc-dot::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+    display: inline-block;
+}
+
+/* ── Row actions ── */
+.file-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-dl, .btn-del {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    border: 1px solid transparent;
+}
+
+.btn-dl {
+    color: var(--text-mid);
+    border-color: var(--border);
+    background: var(--bg2);
+}
+
+.btn-dl:hover {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+}
+
+.btn-dl svg, .btn-del svg {
+    width: 11px; height: 11px;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+.delete-form { margin: 0; }
+
+.btn-del {
+    color: var(--text-dim);
+    border-color: var(--border-soft);
+    background: transparent;
+}
+
+.btn-del:hover {
+    color: #c48a8a;
+    border-color: var(--error-bdr);
+    background: var(--error-bg);
+}
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center;
+    padding: 80px 24px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    opacity: 0;
+    animation: fadeUp 0.6s 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.empty-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-icon svg { width: 20px; height: 20px; stroke: var(--text-dim); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+.empty-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--text-mid);
+    margin-bottom: 8px;
+}
+
+.empty-sub {
+    font-size: 10.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+}
+
+/* ════════════════════════════════
+   KEYFRAMES
+   ════════════════════════════════ */
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes flashSlide {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
 }

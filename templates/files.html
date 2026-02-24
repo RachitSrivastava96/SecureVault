@@ -2,298 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SecureVault – Files</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --bg:      #0a0d14;
-            --surface: #111520;
-            --border:  #1e2535;
-            --accent:  #4f8ef7;
-            --accent2: #7c3aed;
-            --danger:  #ef4444;
-            --text:    #e2e8f0;
-            --muted:   #64748b;
-        }
-
-        body {
-            font-family: 'Syne', sans-serif;
-            background: var(--bg);
-            min-height: 100vh;
-            color: var(--text);
-            padding: 48px 24px;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(79,142,247,0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(79,142,247,0.04) 1px, transparent 1px);
-            background-size: 40px 40px;
-            animation: gridShift 20s linear infinite;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        @keyframes gridShift {
-            0%   { transform: translateY(0); }
-            100% { transform: translateY(40px); }
-        }
-
-        .page {
-            position: relative;
-            z-index: 1;
-            max-width: 820px;
-            margin: 0 auto;
-        }
-
-        .top-bar {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 36px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .badge {
-            font-family: 'Space Mono', monospace;
-            font-size: 11px;
-            color: var(--accent);
-            background: rgba(79,142,247,0.1);
-            border: 1px solid rgba(79,142,247,0.2);
-            padding: 4px 10px;
-            border-radius: 99px;
-            letter-spacing: 0.05em;
-            display: inline-block;
-            margin-bottom: 8px;
-        }
-
-        h1 {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            color: #fff;
-        }
-
-        .upload-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            color: #fff;
-            font-family: 'Syne', sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            padding: 10px 20px;
-            border-radius: 10px;
-            text-decoration: none;
-            transition: opacity 0.2s, transform 0.15s;
-            white-space: nowrap;
-        }
-
-        .upload-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        .count {
-            font-family: 'Space Mono', monospace;
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 20px;
-        }
-
-        /* ── Flash messages ── */
-        .flashes {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
-
-        .flash {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 13.5px;
-            font-weight: 600;
-            animation: flashIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
-        }
-
-        @keyframes flashIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-
-        .flash.success {
-            background: rgba(16,185,129,0.12);
-            border: 1px solid rgba(16,185,129,0.3);
-            color: #34d399;
-        }
-
-        .flash.error {
-            background: rgba(239,68,68,0.12);
-            border: 1px solid rgba(239,68,68,0.3);
-            color: #f87171;
-        }
-
-        /* ── Empty state ── */
-        .empty {
-            background: var(--surface);
-            border: 1px dashed var(--border);
-            border-radius: 16px;
-            padding: 64px 24px;
-            text-align: center;
-        }
-
-        .empty-icon { font-size: 48px; margin-bottom: 16px; }
-        .empty h2   { font-size: 20px; margin-bottom: 8px; color: #fff; }
-        .empty p    { font-size: 14px; color: var(--muted); }
-
-        /* ── File list ── */
-        .file-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .file-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px 22px;
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            animation: cardIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
-            transition: border-color 0.2s;
-        }
-
-        .file-card:hover { border-color: rgba(79,142,247,0.3); }
-
-        @keyframes cardIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .file-icon {
-            font-size: 22px;
-            flex-shrink: 0;
-            width: 44px;
-            height: 44px;
-            background: rgba(79,142,247,0.08);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .file-info { flex: 1; min-width: 0; }
-
-        .file-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: #fff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 4px;
-        }
-
-        .file-meta {
-            font-family: 'Space Mono', monospace;
-            font-size: 11px;
-            color: var(--muted);
-        }
-
-        /* ── Actions ── */
-        .actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(79,142,247,0.1);
-            border: 1px solid rgba(79,142,247,0.25);
-            color: var(--accent);
-            font-family: 'Syne', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 8px 14px;
-            border-radius: 8px;
-            text-decoration: none;
-            transition: background 0.2s, transform 0.15s;
-        }
-
-        .download-btn:hover {
-            background: rgba(79,142,247,0.18);
-            transform: translateY(-1px);
-        }
-
-        /* Delete is a form/button so it looks identical to download btn */
-        .delete-form { margin: 0; }
-
-        .delete-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(239,68,68,0.08);
-            border: 1px solid rgba(239,68,68,0.2);
-            color: #f87171;
-            font-family: 'Syne', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 8px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.15s;
-        }
-
-        .delete-btn:hover {
-            background: rgba(239,68,68,0.15);
-            transform: translateY(-1px);
-        }
-
-        /* Encrypted badge on each card */
-        .enc-badge {
-            font-family: 'Space Mono', monospace;
-            font-size: 10px;
-            color: #a78bfa;
-            background: rgba(124,58,237,0.1);
-            border: 1px solid rgba(124,58,237,0.2);
-            padding: 2px 7px;
-            border-radius: 99px;
-            margin-left: 8px;
-            vertical-align: middle;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVault — Vault</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<div class="page">
 
-    <div class="top-bar">
+<div class="files-wrap">
+
+    <!-- Nav -->
+    <div class="files-nav">
         <div>
-            <span class="badge">SECUREVAULT</span>
-            <h1>Uploaded Files</h1>
+            <div class="files-wordmark">SecureVault</div>
+            <h1 class="files-title">Your Vault</h1>
         </div>
-        <a href="/" class="upload-btn">＋ Upload New File</a>
+        <a href="/" class="btn-nav">
+            <svg viewBox="0 0 24 24" width="11" height="11" style="stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Upload File
+        </a>
     </div>
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="flashes">
+        <div class="flashes" style="margin-bottom:24px;">
           {% for category, message in messages %}
             <div class="flash {{ category }}">
-              <span>{% if category == 'success' %}✅{% else %}⚠️{% endif %}</span>
               <span>{{ message }}</span>
             </div>
           {% endfor %}
@@ -302,36 +36,55 @@
     {% endwith %}
 
     {% if files %}
-        <p class="count">{{ files|length }} file{% if files|length != 1 %}s{% endif %} stored · all encrypted at rest</p>
+
+        <p class="files-count">
+            {{ files|length }} file{% if files|length != 1 %}s{% endif %} · all encrypted at rest
+        </p>
 
         <div class="file-list">
         {% for file in files %}
             {% set ext = file.original_name.rsplit('.', 1)[-1].lower() %}
-            <div class="file-card">
 
-                <div class="file-icon">
-                    {% if ext == 'pdf' %}📄
-                    {% elif ext in ['jpg', 'jpeg', 'png'] %}🖼️
-                    {% else %}📁{% endif %}
+            <div class="file-row">
+
+                <!-- Type icon -->
+                <div class="file-type">
+                    {% if ext == 'pdf' %}
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    {% elif ext in ['jpg', 'jpeg', 'png'] %}
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    {% else %}
+                        <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                    {% endif %}
                 </div>
 
+                <!-- Info -->
                 <div class="file-info">
-                    <div class="file-name">
-                        {{ file.original_name }}
-                        <span class="enc-badge">🔒 encrypted</span>
-                    </div>
+                    <div class="file-name">{{ file.original_name }}</div>
                     <div class="file-meta">
-                        {{ file.size_kb }} KB &nbsp;·&nbsp; {{ ext.upper() }} &nbsp;·&nbsp; {{ file.uploaded_at }}
+                        <span>{{ file.size_kb }} KB</span>
+                        <span class="meta-sep">·</span>
+                        <span>{{ ext.upper() }}</span>
+                        <span class="meta-sep">·</span>
+                        <span>{{ file.uploaded_at }}</span>
+                        <span class="meta-sep">·</span>
+                        <span class="enc-dot">AES-128</span>
                     </div>
                 </div>
 
-                <div class="actions">
-                    <a href="/download/{{ file.uuid_name }}" class="download-btn">↓ Download</a>
+                <!-- Actions -->
+                <div class="file-actions">
+                    <a href="/download/{{ file.uuid_name }}" class="btn-dl">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download
+                    </a>
 
-                    <!-- Delete uses POST so it can't be triggered by just visiting a URL -->
                     <form class="delete-form" method="POST" action="/delete/{{ file.uuid_name }}"
-                          onsubmit="return confirm('Delete {{ file.original_name }}? This cannot be undone.')">
-                        <button type="submit" class="delete-btn">✕ Delete</button>
+                          onsubmit="return confirm('Permanently delete {{ file.original_name }}?')">
+                        <button type="submit" class="btn-del">
+                            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                            Delete
+                        </button>
                     </form>
                 </div>
 
@@ -340,13 +93,25 @@
         </div>
 
     {% else %}
-        <div class="empty">
-            <div class="empty-icon">🗂️</div>
-            <h2>No files yet</h2>
-            <p>Upload your first file to see it here.</p>
+
+        <div class="empty-state">
+            <div class="empty-icon">
+                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            </div>
+            <div class="empty-title">Your vault is empty</div>
+            <p class="empty-sub">Upload your first file to get started</p>
         </div>
+
     {% endif %}
 
 </div>
+
+<script>
+    // Stagger animation delays handled cleanly in JS, not inline Jinja
+    document.querySelectorAll('.file-row').forEach((row, i) => {
+        row.style.animationDelay = `${i * 0.06}s`;
+    });
+</script>
+
 </body>
 </html>
