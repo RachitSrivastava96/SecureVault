@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SecureVault – Files</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:      #0a0d14;
+            --surface: #111520;
+            --border:  #1e2535;
+            --accent:  #4f8ef7;
+            --accent2: #7c3aed;
+            --success: #10b981;
+            --text:    #e2e8f0;
+            --muted:   #64748b;
+        }
+
+        body {
+            font-family: 'Syne', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            padding: 48px 24px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(79,142,247,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(79,142,247,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridShift 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gridShift {
+            0%   { transform: translateY(0); }
+            100% { transform: translateY(40px); }
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 780px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 36px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            background: rgba(79,142,247,0.1);
+            border: 1px solid rgba(79,142,247,0.2);
+            padding: 4px 10px;
+            border-radius: 99px;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #fff;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .upload-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* ── File count ── */
+        .count {
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        /* ── Empty state ── */
+        .empty {
+            background: var(--surface);
+            border: 1px dashed var(--border);
+            border-radius: 16px;
+            padding: 64px 24px;
+            text-align: center;
+        }
+
+        .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty h2   { font-size: 20px; margin-bottom: 8px; color: #fff; }
+        .empty p    { font-size: 14px; color: var(--muted); }
+
+        /* ── File list ── */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .file-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            animation: cardIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+            transition: border-color 0.2s;
+        }
+
+        .file-card:hover { border-color: rgba(79,142,247,0.4); }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .file-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            background: rgba(79,142,247,0.08);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-info { flex: 1; min-width: 0; }
+
+        .file-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+
+        .file-meta {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(79,142,247,0.1);
+            border: 1px solid rgba(79,142,247,0.25);
+            color: var(--accent);
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            flex-shrink: 0;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .download-btn:hover {
+            background: rgba(79,142,247,0.18);
+            transform: translateY(-1px);
+        }
+
+        /* ── Top accent ── */
+        .file-card::before { display: none; }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <div class="top-bar">
+        <div>
+            <span class="badge">SECUREVAULT</span>
+            <h1>Uploaded Files</h1>
+        </div>
+        <a href="/" class="upload-btn">＋ Upload New File</a>
+    </div>
+
+    {% if files %}
+        <p class="count">{{ files|length }} file{% if files|length != 1 %}s{% endif %} stored</p>
+
+        <div class="file-list">
+        {% for file in files %}
+            {% set ext = file.original_name.rsplit('.', 1)[-1].lower() %}
+            <div class="file-card">
+                <div class="file-icon">
+                    {% if ext == 'pdf' %}📄
+                    {% elif ext in ['jpg', 'jpeg', 'png'] %}🖼️
+                    {% else %}📁{% endif %}
+                </div>
+                <div class="file-info">
+                    <div class="file-name">{{ file.original_name }}</div>
+                    <div class="file-meta">{{ file.size_kb }} KB &nbsp;·&nbsp; {{ ext.upper() }}</div>
+                </div>
+                <a href="/download/{{ file.uuid_name }}" class="download-btn">
+                    ↓ Download
+                </a>
+            </div>
+        {% endfor %}
+        </div>
+
+    {% else %}
+        <div class="empty">
+            <div class="empty-icon">🗂️</div>
+            <h2>No files yet</h2>
+            <p>Upload your first file to see it here.</p>
+        </div>
+    {% endif %}
+
+</div>
+</body>
+</html>
