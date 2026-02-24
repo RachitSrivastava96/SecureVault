@@ -1,13 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Secure Upload</title>
+    <title>Secure File Upload</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2>Upload File</h2>
+
+<div class="container">
+
+    <h2>🔐 Secure File Upload Portal</h2>
+    <p>Only PNG, JPG, JPEG, PDF (Max 5MB)</p>
+
+    <!-- FLASH MESSAGES GO HERE -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
     <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <button type="submit">Upload</button>
+        <input type="file" name="file" required>
+        <button type="submit">Upload File</button>
     </form>
+
+</div>
+
 </body>
 </html>

@@ -1,8 +1,9 @@
 import os
 import uuid
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash
 
 app = Flask(__name__)
+app.secret_key = "supersecretkey"
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
@@ -22,24 +23,29 @@ def allowed_file(filename):
 @app.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
+
         if "file" not in request.files:
-            return "No file part"
+            flash("No file part!", "error")
+            return redirect("/")
 
         file = request.files["file"]
 
         if file.filename == "":
-            return "No selected file"
+            flash("No file selected!", "error")
+            return redirect("/")
 
         if file and allowed_file(file.filename):
-            # Secure rename using UUID
             ext = file.filename.rsplit(".", 1)[1].lower()
             new_filename = str(uuid.uuid4()) + "." + ext
-
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], new_filename))
-            return "File uploaded securely!"
 
+            flash("File uploaded securely!", "success")
+            return redirect("/")
         else:
-            return "Invalid file type!"
+            flash("Invalid file type!", "error")
+            return redirect("/")
+
+    return render_template("upload.html")
 
     return render_template("upload.html")
 
