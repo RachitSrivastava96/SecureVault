@@ -259,5 +259,6 @@ def delete_file(uuid_name):
 if __name__ == "__main__":
     app.run(
         debug=True,
+        use_reloader=False,
         # ssl_context=("cert.pem", "key.pem")
     )

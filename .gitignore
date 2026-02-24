@@ -1,2 +1,5 @@
 .venv/*
 .env
+uploads/*
+file_registry.json
+upload_log.txt
